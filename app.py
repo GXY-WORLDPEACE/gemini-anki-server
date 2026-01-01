@@ -227,38 +227,141 @@ def to_tsv(cards: List[Dict[str, str]]) -> str:
 
 
 # ========= Web UI =========
-HOME_HTML = """
+HOME_HTML = r"""
 <!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Gemini Share → Anki TSV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Gemini → Anki TSV</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto; max-width: 720px; margin: 24px auto; padding: 0 14px; }
-    input { width: 100%; padding: 12px; font-size: 16px; }
-    button { padding: 12px 14px; font-size: 16px; margin-top: 10px; width: 100%; }
-    .hint { color: #444; font-size: 14px; margin-top: 10px; line-height: 1.5; }
-    .warn { color: #b00; font-size: 14px; margin-top: 10px; }
+    :root{
+      --bg:#0b0c10; --card:#12141b; --text:#e8eaf0; --muted:#a8afc3;
+      --border:#2a2f3a; --accent:#4f8cff; --danger:#ff5a6a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#f6f7fb; --card:#ffffff; --text:#14161f; --muted:#5b6173;
+        --border:#e6e8f0; --accent:#2f6bff; --danger:#d92b3a; --shadow: 0 10px 30px rgba(20,22,31,.08);}
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans","PingFang SC","Microsoft YaHei",sans-serif;
+      background:var(--bg); color:var(--text);
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+    }
+    .wrap{max-width:720px; margin:22px auto 28px;}
+    .title{font-size:22px; font-weight:800; letter-spacing:.2px; margin:6px 0 10px;}
+    .subtitle{color:var(--muted); font-size:14px; line-height:1.55; margin:0 0 16px;}
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:18px;
+      box-shadow:var(--shadow); padding:16px;
+    }
+    label{display:block; font-weight:700; font-size:14px; margin:0 0 8px;}
+    input{
+      width:100%;
+      font-size:16px; /* iOS 16px+ prevents zoom */
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:transparent; color:var(--text);
+      outline:none;
+    }
+    input:focus{border-color:rgba(79,140,255,.8); box-shadow:0 0 0 4px rgba(79,140,255,.18);}
+    .btn{
+      width:100%; margin-top:12px;
+      border:0; border-radius:14px;
+      padding:14px 14px;
+      font-size:16px; font-weight:800;
+      background:var(--accent); color:white;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .btn:disabled{opacity:.65; cursor:not-allowed;}
+    .row{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+    .hint{
+      margin-top:12px; color:var(--muted); font-size:13px; line-height:1.55;
+    }
+    .steps{
+      margin:14px 0 0; padding:0 0 0 18px; color:var(--muted); font-size:13px; line-height:1.6;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      margin-top:10px;
+      padding:10px 12px; border:1px dashed var(--border); border-radius:14px;
+      color:var(--muted); font-size:13px;
+    }
+    .spinner{
+      width:16px; height:16px; border-radius:999px;
+      border:2px solid rgba(255,255,255,.45);
+      border-top-color:white;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .footer{margin-top:14px; color:var(--muted); font-size:12px; line-height:1.55;}
+    code{background:rgba(127,127,127,.15); padding:2px 6px; border-radius:8px;}
   </style>
 </head>
 <body>
-  <h2>Gemini Share → Anki TSV</h2>
-  <form method="post" action="/download_tsv">
-    <label>Paste Gemini share link:</label><br/>
-    <input name="url" placeholder="https://gemini.google.com/share/..." required />
-    <button type="submit">Generate & Download TSV</button>
-  </form>
-  <p class="hint">
-    输出 TSV 可直接导入 Anki（Tab 分隔）：第一列=English，第二列=中文备注。<br/>
-    服务器会自动：抓取分享页 → 清洗无关内容 → 去重 → DeepSeek 精选句子 → 下载 TSV。
-  </p>
-  <p class="warn">
-    注意：链接必须是公开可访问的 Gemini share 页面。
-  </p>
+  <div class="wrap">
+    <div class="title">Gemini 分享链接 → Anki TSV</div>
+    <p class="subtitle">
+      粘贴 Gemini <b>share</b> 链接，点击生成。结果会自动下载 <code>anki_cards.tsv</code>（Tab 分隔，可直接导入 Anki）。
+    </p>
+
+    <div class="card">
+      <form id="f" method="post" action="/download_tsv">
+        <label for="url">Gemini 分享链接</label>
+        <input id="url" name="url" inputmode="url" autocomplete="off"
+               placeholder="https://gemini.google.com/share/..." required>
+        <button id="btn" class="btn" type="submit">
+          <span id="btnText">生成并下载 TSV</span>
+        </button>
+
+        <div id="status" class="pill" style="display:none;">
+          <div class="spinner" aria-hidden="true"></div>
+          <div>生成中…（抓取页面 + 总结句子），可能需要 10–60 秒</div>
+        </div>
+
+        <div class="hint">
+          建议：分享链接必须是公开可访问的页面（无需登录）。
+          <ol class="steps">
+            <li>Gemini 对话 → 分享 → 复制链接</li>
+            <li>粘贴到这里 → 点击生成</li>
+            <li>下载后在 Anki 导入：分隔符选 Tab，第一列=English，第二列=中文备注</li>
+          </ol>
+        </div>
+
+        <div class="footer">
+          如果点了按钮没反应，先等 1 分钟；免费实例/网络较慢时会更久。失败会显示错误页（可返回重试）。
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Auto focus for mobile convenience
+    window.addEventListener('load', () => {
+      const u = document.getElementById('url');
+      if (u) u.focus();
+    });
+
+    // Show loading state on submit
+    const form = document.getElementById('f');
+    const btn = document.getElementById('btn');
+    const status = document.getElementById('status');
+    const btnText = document.getElementById('btnText');
+
+    form.addEventListener('submit', () => {
+      btn.disabled = true;
+      btnText.textContent = '生成中…';
+      status.style.display = 'inline-flex';
+    });
+  </script>
 </body>
 </html>
 """
+
 
 
 @app.get("/", response_class=HTMLResponse)
