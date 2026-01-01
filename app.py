@@ -388,34 +388,68 @@ HOME_HTML = r"""
     @keyframes spin{to{transform:rotate(360deg)}}
     .footer{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.55;}
     code{background:rgba(127,127,127,.15); padding:2px 6px; border-radius:8px;}
+
+    /* ===== language selector ===== */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin:0 0 12px;
+    }
+    .lang{
+      display:flex; align-items:center; gap:8px;
+      color:var(--muted); font-size:13px;
+    }
+    select{
+      font-size:14px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:transparent;
+      color:var(--text);
+      outline:none;
+    }
+    select:focus{border-color:rgba(79,140,255,.8); box-shadow:0 0 0 4px rgba(79,140,255,.18);}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="title">生成 Anki TSV</div>
-    <p class="subtitle">
+    <div class="topbar">
+      <div class="title" data-i18n="title">生成 Anki TSV</div>
+
+      <div class="lang">
+        <span data-i18n="langLabel">语言</span>
+        <select id="langSel" aria-label="Language">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="subtitle" data-i18n="subtitle">
       两种方式：① Gemini 分享链接 ② 直接粘贴文本。生成后会下载 <code>.tsv</code>（Tab 分隔，可导入 Anki）。
     </p>
 
     <div class="card">
       <form id="f_link" method="post" action="/download_tsv">
-        <label for="url">方式 A：Gemini 分享链接</label>
+        <label for="url" data-i18n="aLabel">方式 A：Gemini 分享链接</label>
         <input id="url" name="url" inputmode="url" autocomplete="off"
+               data-i18n-placeholder="aPlaceholder"
                placeholder="https://gemini.google.com/share/..." required>
+
         <button id="btn_link" class="btn" type="submit">
-          <span id="btnText_link">用链接生成并下载 TSV</span>
+          <span id="btnText_link" data-i18n="aBtn">用链接生成并下载 TSV</span>
         </button>
 
         <div id="status_link" class="pill" style="display:none;">
           <div class="spinner" aria-hidden="true"></div>
-          <div>生成中…（抓取页面 + 总结句子），可能需要 10–60 秒</div>
+          <div data-i18n="aLoading">生成中…（抓取页面 + 总结句子），可能需要 10–60 秒</div>
         </div>
 
         <div class="hint">
-          建议：分享链接必须是公开可访问的页面（无需登录）。
+          <span data-i18n="aHint">建议：分享链接必须是公开可访问的页面（无需登录）。</span>
           <ol class="steps">
-            <li>Gemini 对话 → 分享 → 复制链接</li>
-            <li>粘贴到这里 → 点击生成</li>
+            <li data-i18n="aStep1">Gemini 对话 → 分享 → 复制链接</li>
+            <li data-i18n="aStep2">粘贴到这里 → 点击生成</li>
           </ol>
         </div>
       </form>
@@ -423,21 +457,22 @@ HOME_HTML = r"""
 
     <div class="card">
       <form id="f_text" method="post" action="/download_tsv_text">
-        <label for="text">方式 B：直接粘贴一段文字</label>
+        <label for="text" data-i18n="bLabel">方式 B：直接粘贴一段文字</label>
         <textarea id="text" name="text"
+                  data-i18n-placeholder="bPlaceholder"
                   placeholder="在这里粘贴你的英文/对话/文章片段…（建议 200–4000 字）"
                   required></textarea>
 
         <button id="btn_text" class="btn" type="submit">
-          <span id="btnText_text">用文本生成并下载 TSV</span>
+          <span id="btnText_text" data-i18n="bBtn">用文本生成并下载 TSV</span>
         </button>
 
         <div id="status_text" class="pill" style="display:none;">
           <div class="spinner" aria-hidden="true"></div>
-          <div>生成中…（筛选可学句子 + 去重），可能需要 5–40 秒</div>
+          <div data-i18n="bLoading">生成中…（筛选可学句子 + 去重），可能需要 5–40 秒</div>
         </div>
 
-        <div class="footer">
+        <div class="footer" data-i18n="bFooter">
           Anki 导入：分隔符选 Tab；第一列=English，第二列=中文备注。
         </div>
       </form>
@@ -445,8 +480,114 @@ HOME_HTML = r"""
   </div>
 
   <script>
+    const I18N = {
+      zh: {
+        title: "生成 Anki TSV",
+        langLabel: "语言",
+        subtitle: "两种方式：① Gemini 分享链接 ② 直接粘贴文本。生成后会下载 <code>.tsv</code>（Tab 分隔，可导入 Anki）。",
+
+        aLabel: "方式 A：Gemini 分享链接",
+        aPlaceholder: "https://gemini.google.com/share/...",
+        aBtn: "用链接生成并下载 TSV",
+        aLoading: "生成中…（抓取页面 + 总结句子），可能需要 10–60 秒",
+        aHint: "建议：分享链接必须是公开可访问的页面（无需登录）。",
+        aStep1: "Gemini 对话 → 分享 → 复制链接",
+        aStep2: "粘贴到这里 → 点击生成",
+
+        bLabel: "方式 B：直接粘贴一段文字",
+        bPlaceholder: "在这里粘贴你的英文/对话/文章片段…（建议 200–4000 字）",
+        bBtn: "用文本生成并下载 TSV",
+        bLoading: "生成中…（筛选可学句子 + 去重），可能需要 5–40 秒",
+        bFooter: "Anki 导入：分隔符选 Tab；第一列=English，第二列=中文备注。",
+
+        linkBtnLoading: "生成中…",
+        textBtnLoading: "生成中…"
+      },
+
+      en: {
+        title: "Generate Anki TSV",
+        langLabel: "Language",
+        subtitle: "Two ways: (1) Gemini share link (2) Paste text. After generating, a <code>.tsv</code> file will be downloaded (Tab-separated, importable to Anki).",
+
+        aLabel: "Option A: Gemini Share Link",
+        aPlaceholder: "https://gemini.google.com/share/...",
+        aBtn: "Generate & Download TSV (Link)",
+        aLoading: "Generating… (fetching page + extracting sentences), may take 10–60 seconds",
+        aHint: "Tip: The share link must be publicly accessible (no login required).",
+        aStep1: "In Gemini → Share → Copy link",
+        aStep2: "Paste it here → Click generate",
+
+        bLabel: "Option B: Paste Text",
+        bPlaceholder: "Paste your English / dialogue / article here… (recommended 200–4000 words)",
+        bBtn: "Generate & Download TSV (Text)",
+        bLoading: "Generating… (selecting learnable sentences + dedup), may take 5–40 seconds",
+        bFooter: "Anki import: set separator to Tab; column 1 = English, column 2 = Chinese notes.",
+
+        linkBtnLoading: "Generating…",
+        textBtnLoading: "Generating…"
+      },
+
+      de: {
+        title: "Anki-TSV erstellen",
+        langLabel: "Sprache",
+        subtitle: "Zwei Wege: (1) Gemini-Share-Link (2) Text einfügen. Danach wird eine <code>.tsv</code>-Datei heruntergeladen (Tab-getrennt, für Anki importierbar).",
+
+        aLabel: "Option A: Gemini-Share-Link",
+        aPlaceholder: "https://gemini.google.com/share/...",
+        aBtn: "TSV erstellen & herunterladen (Link)",
+        aLoading: "Wird erstellt… (Seite abrufen + Sätze extrahieren), kann 10–60 Sekunden dauern",
+        aHint: "Tipp: Der Share-Link muss öffentlich zugänglich sein (ohne Login).",
+        aStep1: "In Gemini → Teilen → Link kopieren",
+        aStep2: "Hier einfügen → Erstellen",
+
+        bLabel: "Option B: Text einfügen",
+        bPlaceholder: "Füge hier deinen englischen Text / Dialog / Artikel ein… (empfohlen 200–4000 Wörter)",
+        bBtn: "TSV erstellen & herunterladen (Text)",
+        bLoading: "Wird erstellt… (lernenswerte Sätze auswählen + Duplikate entfernen), kann 5–40 Sekunden dauern",
+        bFooter: "Anki-Import: Trennzeichen Tab; Spalte 1 = Englisch, Spalte 2 = chinesische Notizen.",
+
+        linkBtnLoading: "Wird erstellt…",
+        textBtnLoading: "Wird erstellt…"
+      }
+    };
+
+    function applyLang(lang) {
+      const dict = I18N[lang] || I18N.zh;
+
+      // text nodes
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key] !== undefined) el.innerHTML = dict[key]; // innerHTML because subtitle contains <code>
+      });
+
+      // placeholders
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        if (dict[key] !== undefined) el.setAttribute("placeholder", dict[key]);
+      });
+
+      // html lang
+      document.documentElement.setAttribute("lang", lang === "de" ? "de" : (lang === "en" ? "en" : "zh-CN"));
+
+      // persist
+      localStorage.setItem("ui_lang", lang);
+    }
+
+    function getLang() {
+      return localStorage.getItem("ui_lang") || "zh";
+    }
+
+    function initLang() {
+      const sel = document.getElementById("langSel");
+      const saved = getLang();
+      sel.value = saved;
+      applyLang(saved);
+      sel.addEventListener("change", () => applyLang(sel.value));
+    }
+
     // Auto focus for mobile convenience
     window.addEventListener('load', () => {
+      initLang();
       const u = document.getElementById('url');
       if (u) u.focus();
     });
@@ -456,8 +597,12 @@ HOME_HTML = r"""
       const btn = document.getElementById('btn_link');
       const status = document.getElementById('status_link');
       const btnText = document.getElementById('btnText_link');
+
+      const lang = getLang();
+      const dict = I18N[lang] || I18N.zh;
+
       btn.disabled = true;
-      btnText.textContent = '生成中…';
+      btnText.textContent = dict.linkBtnLoading || '...';
       status.style.display = 'inline-flex';
     });
 
@@ -466,14 +611,19 @@ HOME_HTML = r"""
       const btn = document.getElementById('btn_text');
       const status = document.getElementById('status_text');
       const btnText = document.getElementById('btnText_text');
+
+      const lang = getLang();
+      const dict = I18N[lang] || I18N.zh;
+
       btn.disabled = true;
-      btnText.textContent = '生成中…';
+      btnText.textContent = dict.textBtnLoading || '...';
       status.style.display = 'inline-flex';
     });
   </script>
 </body>
 </html>
 """
+
 
 
 @app.get("/", response_class=HTMLResponse)
